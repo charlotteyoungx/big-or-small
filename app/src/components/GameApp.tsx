@@ -266,10 +266,27 @@ export function GameApp() {
         <div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
             <ConnectButton />
-            </div>
+            <div>Contract: {hasContract ? CONTRACT_ADDRESS : 'Set VITE_BOS_ADDRESS'}</div>
+          </div>
+
+          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontWeight: 600 }}>How to Play</div>
+            <ol style={{ margin: 0, paddingLeft: 20, color: '#374151', lineHeight: 1.5 }}>
+              <li>Connect your wallet on Sepolia and ensure the bank has ETH.</li>
+              <li>Press “Start Game” to encrypt a random dice and register the round.</li>
+              <li>Choose stake and bet on Small (1-3) or Big (4-6), then place the bet.</li>
+              <li>Hit “Reveal Round” to trigger the decryption oracle and settle rewards.</li>
+            </ol>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Copy the round id if you want to check the result later.</div>
+          </div>
+
+          <div style={{ height: 12 }} />
 
           <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-           
+            <div style={{ fontWeight: 600 }}>Round Id</div>
+            <div style={{ wordBreak: 'break-all', color: '#374151', minHeight: 20 }}>
+              {currentRoundId || 'Generated automatically when you start a game'}
+            </div>
             <button onClick={startGame} disabled={disableActions || !hasContract}>
               {action === 'starting' ? 'Starting...' : 'Start Game'}
             </button>
