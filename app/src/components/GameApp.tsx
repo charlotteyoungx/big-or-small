@@ -11,7 +11,7 @@ import { useEthersSigner } from '../hooks/useEthersSigner';
 import { useZamaInstance } from '../hooks/useZamaInstance';
 import '../styles/GameApp.css';
 
-const CONTRACT_ADDRESS = import.meta.env.VITE_BOS_ADDRESS as Hex | undefined;
+const CONTRACT_ADDRESS = "0xbBe2C97d6bE10743b827898B4a119f6E94A4354a";
 
 type RoundSummary = {
   player: Hex;
@@ -146,15 +146,6 @@ export function GameApp() {
     }
   }, [currentRoundId, loadRoundInfo]);
 
-  const ensureRoundId = useCallback(() => {
-    if (currentRoundId) {
-      return currentRoundId;
-    }
-    const newId = createRoundId();
-    setRoundId(newId);
-    return newId;
-  }, [currentRoundId]);
-
   const ensureSigner = useCallback(() => {
     if (!isConnected || !address) {
       setStatusMessage('Connect wallet to play.');
@@ -183,7 +174,8 @@ export function GameApp() {
     try {
       setAction('starting');
       setStatusMessage('Encrypting dice...');
-      const targetId = ensureRoundId();
+      const targetId = createRoundId();
+      setRoundId(targetId);
       const dice = Math.floor(Math.random() * 6) + 1;
       const userAddress = address as Hex;
       const buffer = zama.createEncryptedInput(CONTRACT_ADDRESS, userAddress);
@@ -200,7 +192,7 @@ export function GameApp() {
     } finally {
       setAction('idle');
     }
-  }, [hasContract, isZamaLoading, zama, zamaError, ensureRoundId, ensureSigner, address, loadRoundInfo]);
+  }, [hasContract, isZamaLoading, zama, zamaError, ensureSigner, address, loadRoundInfo]);
 
   const placeBet = useCallback(async () => {
     if (!hasContract) {
@@ -277,15 +269,10 @@ export function GameApp() {
             <div>Contract: {hasContract ? CONTRACT_ADDRESS : 'Set VITE_BOS_ADDRESS'}</div>
           </div>
 
-          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <div style={{ marginBottom: 8 }}>
-              <label>Round Id (bytes32): </label>
-              <input
-                value={roundId}
-                onChange={(event) => setRoundId(event.target.value)}
-                placeholder="0x..."
-                style={{ width: '100%' }}
-              />
+          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontWeight: 600 }}>Round Id:</div>
+            <div style={{ wordBreak: 'break-all', color: '#374151' }}>
+              {currentRoundId || 'Generated when you start a game'}
             </div>
             <button onClick={startGame} disabled={disableActions || !hasContract}>
               {action === 'starting' ? 'Starting...' : 'Start Game'}

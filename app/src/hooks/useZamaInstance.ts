@@ -1,12 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
-import { createInstance, initSDK, SepoliaConfig } from '@zama-fhe/relayer-sdk/bundle';
+import { useState, useEffect } from 'react';
+import { createInstance,initSDK,SepoliaConfig } from '@zama-fhe/relayer-sdk/bundle';
 
 export function useZamaInstance() {
   const [instance, setInstance] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const browserProvider = useMemo(() => (typeof window !== 'undefined' ? (window as any).ethereum : undefined), []);
 
   useEffect(() => {
     let mounted = true;
@@ -15,12 +13,9 @@ export function useZamaInstance() {
       try {
         setIsLoading(true);
         setError(null);
-        await initSDK();
+        await initSDK()
 
-        const config = browserProvider
-          ? { ...SepoliaConfig, network: browserProvider }
-          : SepoliaConfig;
-        const zamaInstance = await createInstance(config);
+        const zamaInstance = await createInstance(SepoliaConfig);
 
         if (mounted) {
           setInstance(zamaInstance);
@@ -42,7 +37,7 @@ export function useZamaInstance() {
     return () => {
       mounted = false;
     };
-  }, [browserProvider]);
+  }, []);
 
   return { instance, isLoading, error };
 }
