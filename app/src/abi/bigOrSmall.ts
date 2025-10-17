@@ -197,9 +197,9 @@ export const bigOrSmallAbi: InterfaceAbi = [
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "roundId",
+        "type": "bytes32"
       },
       {
         "internalType": "externalEuint8",
