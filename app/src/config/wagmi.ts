@@ -4,10 +4,9 @@ import { sepolia } from 'viem/chains';
 
 export const config = getDefaultConfig({
   appName: 'Big Or Small',
-  projectId: import.meta.env.VITE_WC_PROJECT_ID as string,
+  projectId: "Your ID",
   chains: [sepolia],
   transports: {
-    [sepolia.id]: http(),
+    [sepolia.id]: http(sepolia.rpcUrls.default.http[0]),
   },
 });
-
