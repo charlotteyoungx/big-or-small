@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint8, externalEuint8} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint8} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /// @title BigOrSmall - single player high-low dice with FHE commit
@@ -33,10 +33,13 @@ contract BigOrSmall is SepoliaConfig {
 
     /// @notice Start a round by submitting an encrypted dice value (1..6)
     /// @dev roundId can be any unique value chosen by player (e.g., keccak of user+nonce)
-    function startGame(bytes32 roundId, externalEuint8 encDiceExt, bytes calldata proof) external {
+    function startGame(bytes32 roundId) external {
         require(rounds[roundId].player == address(0), "round exists");
-        euint8 enc = FHE.fromExternal(encDiceExt, proof);
-        // store encrypted dice
+        euint8 rand = FHE.randEuint8();
+        euint8 bounded = FHE.rem(rand, 6);
+        euint8 enc = FHE.add(bounded, FHE.asEuint8(1));
+        // allow contract to manage ciphertext for later reveal
+        FHE.allowThis(enc);
         rounds[roundId] = Round({
             player: msg.sender,
             stake: 0,
@@ -46,8 +49,6 @@ contract BigOrSmall is SepoliaConfig {
             result: 0,
             revealPending: false
         });
-        // allow contract to later reveal
-        FHE.allowThis(enc);
         emit GameStarted(roundId, msg.sender);
     }
 
