@@ -200,16 +200,6 @@ export const bigOrSmallAbi: InterfaceAbi = [
         "internalType": "bytes32",
         "name": "roundId",
         "type": "bytes32"
-      },
-      {
-        "internalType": "externalEuint8",
-        "name": "encDiceExt",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "proof",
-        "type": "bytes"
       }
     ],
     "name": "startGame",

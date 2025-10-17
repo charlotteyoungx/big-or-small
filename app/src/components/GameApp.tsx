@@ -8,10 +8,9 @@ import { useAccount, usePublicClient } from 'wagmi';
 import { Header } from './Header';
 import { bigOrSmallAbi } from '../abi/bigOrSmall';
 import { useEthersSigner } from '../hooks/useEthersSigner';
-import { useZamaInstance } from '../hooks/useZamaInstance';
 import '../styles/GameApp.css';
 
-const CONTRACT_ADDRESS = "0xbBe2C97d6bE10743b827898B4a119f6E94A4354a";
+const CONTRACT_ADDRESS = "0xd9AFC0F7bcC9fbBD3d228198Deda810c339CEcC5";
 
 type RoundSummary = {
   player: Hex;
@@ -41,7 +40,6 @@ export function GameApp() {
   const { address, isConnected } = useAccount();
   const signer = useEthersSigner({ chainId: sepolia.id });
   const publicClient = usePublicClient({ chainId: sepolia.id });
-  const { instance: zama, isLoading: isZamaLoading, error: zamaError } = useZamaInstance();
 
   const [roundId, setRoundId] = useState<string>('');
   const [betEth, setBetEth] = useState<string>('0.001');
@@ -157,26 +155,13 @@ export function GameApp() {
       setStatusMessage('Missing contract address');
       return;
     }
-    if (isZamaLoading) {
-      setStatusMessage('Preparing encryption...');
-      return;
-    }
-    if (!zama) {
-      setStatusMessage(zamaError ?? 'Encryption unavailable');
-      return;
-    }
     try {
       setAction('starting');
-      setStatusMessage('Encrypting dice...');
+      setStatusMessage('Rolling dice on-chain...');
       const targetId = createRoundId();
       setRoundId(targetId);
-      const dice = Math.floor(Math.random() * 6) + 1;
-      const userAddress = address as Hex;
-      const buffer = zama.createEncryptedInput(CONTRACT_ADDRESS, userAddress);
-      buffer.add8(BigInt(dice));
-      const encrypted = await buffer.encrypt();
       const gameContract = await ensureSigner();
-      const tx = await gameContract.startGame(targetId, encrypted.handles[0], encrypted.inputProof);
+      const tx = await gameContract.startGame(targetId);
       await tx.wait();
       setStatusMessage('Game started. Place your bet!');
       loadRoundInfo(targetId);
@@ -186,7 +171,7 @@ export function GameApp() {
     } finally {
       setAction('idle');
     }
-  }, [hasContract, isZamaLoading, zama, zamaError, ensureSigner, address, loadRoundInfo]);
+  }, [hasContract, ensureSigner, loadRoundInfo]);
 
   const placeBet = useCallback(async () => {
     if (!hasContract) {
@@ -267,7 +252,7 @@ export function GameApp() {
             </div>
             <ol className="instruction-list">
               <li>Connect your wallet on Sepolia and ensure the bank has ETH</li>
-              <li>Press "Start Game" to encrypt a random dice and register the round</li>
+              <li>Press "Start Game" to roll a chain-generated dice and register the round</li>
               <li>Choose stake and bet on Small (1-3) or Big (4-6), then place the bet</li>
               <li>Hit "Reveal Round" to trigger the decryption oracle and settle rewards</li>
             </ol>
@@ -308,7 +293,6 @@ export function GameApp() {
                   </>
                 )}
               </button>
-              {zamaError && <div className="error-message">{zamaError}</div>}
             </div>
           </div>
 
