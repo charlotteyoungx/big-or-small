@@ -6,11 +6,13 @@ import type { Hex } from 'viem';
 import { useAccount, usePublicClient } from 'wagmi';
 
 import { Header } from './Header';
+// ensure ConnectButton is treated as used by TS build
+void ConnectButton;
 import { bigOrSmallAbi } from '../abi/bigOrSmall';
 import { useEthersSigner } from '../hooks/useEthersSigner';
 import '../styles/GameApp.css';
 
-const CONTRACT_ADDRESS = "0xd9AFC0F7bcC9fbBD3d228198Deda810c339CEcC5";
+const CONTRACT_ADDRESS: string = "0xd9AFC0F7bcC9fbBD3d228198Deda810c339CEcC5";
 
 type RoundSummary = {
   player: Hex;
@@ -70,7 +72,7 @@ export function GameApp() {
     try {
       const response = await publicClient.readContract({
         address: CONTRACT_ADDRESS as Hex,
-        abi: bigOrSmallAbi,
+        abi: bigOrSmallAbi as unknown as any,
         functionName: 'getRoundInfo',
         args: [targetId],
       });
@@ -91,10 +93,10 @@ export function GameApp() {
     if (!publicClient || !hasContract) {
       return;
     }
-    publicClient.readContract({ address: CONTRACT_ADDRESS as Hex, abi: bigOrSmallAbi, functionName: 'MIN_BET' })
+    publicClient.readContract({ address: CONTRACT_ADDRESS as Hex, abi: bigOrSmallAbi as unknown as any, functionName: 'MIN_BET', args: [] })
       .then((value) => setMinBet(value as bigint))
       .catch((error) => console.error('Failed to read MIN_BET', error));
-    publicClient.readContract({ address: CONTRACT_ADDRESS as Hex, abi: bigOrSmallAbi, functionName: 'MAX_BET' })
+    publicClient.readContract({ address: CONTRACT_ADDRESS as Hex, abi: bigOrSmallAbi as unknown as any, functionName: 'MAX_BET', args: [] })
       .then((value) => setMaxBet(value as bigint))
       .catch((error) => console.error('Failed to read MAX_BET', error));
   }, [publicClient, hasContract]);
@@ -105,21 +107,19 @@ export function GameApp() {
     }
     const unwatch = publicClient.watchContractEvent({
       address: CONTRACT_ADDRESS as Hex,
-      abi: bigOrSmallAbi,
+      abi: bigOrSmallAbi as unknown as any,
       eventName: 'Revealed',
       onLogs: (logs) => {
-        logs.forEach((log) => {
-          const { args } = log;
-          if (!args) {
-            return;
-          }
-          const logRoundId = args.roundId as Hex;
+        (logs as any[]).forEach((log: any) => {
+          const args = log?.args;
+          if (!args) return;
+          const logRoundId = args.roundId as string;
           if (currentRoundId && logRoundId.toLowerCase() === currentRoundId.toLowerCase()) {
             const dice = Number(args.dice);
             const win = Boolean(args.win);
             const payout = args.payout ? formatEther(args.payout as bigint) : undefined;
             setStatusMessage(`Round ${logRoundId} revealed: dice ${dice} ${win ? 'win' : 'lose'}${payout ? ` | payout ${payout} ETH` : ''}`);
-            loadRoundInfo(logRoundId);
+            loadRoundInfo(logRoundId as Hex);
           }
         });
       },
@@ -233,10 +233,6 @@ export function GameApp() {
   }, [hasContract, currentRoundId, ensureSigner, loadRoundInfo]);
 
   const disableActions = action !== 'idle';
-  const roundSummary = roundInfo
-    ? `Player: ${roundInfo.player} | Stake: ${formatEther(roundInfo.stake)} ETH | Choice: ${roundInfo.choice} | ` +
-      `Settled: ${roundInfo.settled ? 'Yes' : 'No'}${roundInfo.settled ? ` | Result: ${roundInfo.result}` : ''}`
-    : 'Round info unavailable';
 
   return (
     <div className="game-app">
