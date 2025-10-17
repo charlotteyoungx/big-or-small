@@ -17,16 +17,19 @@ contract BigOrSmall is SepoliaConfig {
         euint8 encDice;
         bool settled;
         uint8 result;
+        bool revealPending;
     }
 
     uint256 public constant MIN_BET = 1e15; // 0.001 ether
     uint256 public constant MAX_BET = 1e16; // 0.01 ether
 
     mapping(bytes32 => Round) public rounds; // roundId => Round
+    mapping(uint256 => bytes32) private requestToRound; // decryption request => roundId
 
     event GameStarted(bytes32 indexed roundId, address indexed player);
     event BetPlaced(bytes32 indexed roundId, address indexed player, Choice choice, uint256 stake);
     event Revealed(bytes32 indexed roundId, uint8 dice, bool win, uint256 payout);
+    event RevealRequested(bytes32 indexed roundId, uint256 indexed requestId);
 
     /// @notice Start a round by submitting an encrypted dice value (1..6)
     /// @dev roundId can be any unique value chosen by player (e.g., keccak of user+nonce)
@@ -40,7 +43,8 @@ contract BigOrSmall is SepoliaConfig {
             choice: Choice.None,
             encDice: enc,
             settled: false,
-            result: 0
+            result: 0,
+            revealPending: false
         });
         // allow contract to later reveal
         FHE.allowThis(enc);
@@ -64,10 +68,32 @@ contract BigOrSmall is SepoliaConfig {
     function reveal(bytes32 roundId) external {
         Round storage r = rounds[roundId];
         require(r.player != address(0), "no round");
+        require(msg.sender == r.player, "not player");
         require(!r.settled, "settled");
+        require(!r.revealPending, "pending");
         require(r.choice == Choice.Small || r.choice == Choice.Big, "no bet");
-        uint32 decrypted = FHE.decrypt(r.encDice);
-        uint8 dice = uint8(decrypted);
+
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = FHE.toBytes32(r.encDice);
+        uint256 requestId = FHE.requestDecryption(handles, this.onRevealResponse.selector);
+        requestToRound[requestId] = roundId;
+        r.revealPending = true;
+        emit RevealRequested(roundId, requestId);
+    }
+
+    /// @notice Callback invoked by the decryption oracle with the plaintext dice value.
+    /// @dev The oracle provides `cleartexts` encoded using ABI encoding of the decrypted values.
+    function onRevealResponse(uint256 requestId, bytes calldata cleartexts, bytes calldata decryptionProof) external {
+        bytes32 roundId = requestToRound[requestId];
+        Round storage r = rounds[roundId];
+        require(r.player != address(0), "unknown request");
+        require(r.revealPending, "not pending");
+
+        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
+
+        delete requestToRound[requestId];
+
+        uint8 dice = uint8(abi.decode(cleartexts, (uint8)));
         require(dice >= 1 && dice <= 6, "bad dice");
 
         bool isBig = dice >= 4;
@@ -77,6 +103,7 @@ contract BigOrSmall is SepoliaConfig {
         uint256 stake = r.stake;
         r.stake = 0;
         r.settled = true;
+        r.revealPending = false;
         r.result = dice;
 
         uint256 payout = 0;
