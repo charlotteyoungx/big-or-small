@@ -54,13 +54,6 @@ export function GameApp() {
 
   const hasContract = Boolean(CONTRACT_ADDRESS && CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000');
 
-  const contract = useMemo(() => {
-    if (!hasContract || !signer) {
-      return null;
-    }
-    return new Contract(CONTRACT_ADDRESS as string, bigOrSmallAbi, signer);
-  }, [signer, hasContract]);
-
   const currentRoundId = useMemo(() => {
     if (roundId && isBytes32(roundId)) {
       return roundId as Hex;
@@ -146,21 +139,22 @@ export function GameApp() {
     }
   }, [currentRoundId, loadRoundInfo]);
 
-  const ensureSigner = useCallback(() => {
+  const ensureSigner = useCallback(async () => {
     if (!isConnected || !address) {
       setStatusMessage('Connect wallet to play.');
       throw new Error('wallet not connected');
     }
-    if (!contract) {
+    if (!hasContract || !signer) {
       setStatusMessage('Contract or signer unavailable.');
       throw new Error('missing contract');
     }
-    return contract;
-  }, [contract, isConnected, address]);
+    const resolvedSigner = await signer;
+    return new Contract(CONTRACT_ADDRESS as string, bigOrSmallAbi, resolvedSigner);
+  }, [isConnected, address, signer, hasContract]);
 
   const startGame = useCallback(async () => {
     if (!hasContract) {
-      setStatusMessage('Missing VITE_BOS_ADDRESS');
+      setStatusMessage('Missing contract address');
       return;
     }
     if (isZamaLoading) {
@@ -181,7 +175,7 @@ export function GameApp() {
       const buffer = zama.createEncryptedInput(CONTRACT_ADDRESS, userAddress);
       buffer.add8(BigInt(dice));
       const encrypted = await buffer.encrypt();
-      const gameContract = ensureSigner();
+      const gameContract = await ensureSigner();
       const tx = await gameContract.startGame(targetId, encrypted.handles[0], encrypted.inputProof);
       await tx.wait();
       setStatusMessage('Game started. Place your bet!');
@@ -196,7 +190,7 @@ export function GameApp() {
 
   const placeBet = useCallback(async () => {
     if (!hasContract) {
-      setStatusMessage('Missing VITE_BOS_ADDRESS');
+      setStatusMessage('Missing contract address');
       return;
     }
     if (!currentRoundId) {
@@ -204,7 +198,7 @@ export function GameApp() {
       return;
     }
     try {
-      const gameContract = ensureSigner();
+      const gameContract = await ensureSigner();
       const value = parseEther(betEth);
       if (minBet && value < minBet) {
         setStatusMessage(`Bet must be at least ${formatEther(minBet)} ETH.`);
@@ -230,7 +224,7 @@ export function GameApp() {
 
   const revealRound = useCallback(async () => {
     if (!hasContract) {
-      setStatusMessage('Missing VITE_BOS_ADDRESS');
+      setStatusMessage('Missing contract address');
       return;
     }
     if (!currentRoundId) {
@@ -238,7 +232,7 @@ export function GameApp() {
       return;
     }
     try {
-      const gameContract = ensureSigner();
+      const gameContract = await ensureSigner();
       setAction('revealing');
       setStatusMessage('Revealing round...');
       const tx = await gameContract.reveal(currentRoundId);
@@ -265,21 +259,6 @@ export function GameApp() {
       <main className="main-content">
         <div className="game-container">
           {/* Hero Section */}
-          <div className="hero-section">
-            <div className="hero-icon">🎲</div>
-            <h1 className="hero-title">Big or Small</h1>
-            <p className="hero-subtitle">Provably Fair Dice Game with FHE Encryption</p>
-            <div className="wallet-connect">
-              <ConnectButton />
-            </div>
-            {hasContract && (
-              <div className="contract-badge">
-                <span className="contract-label">Contract:</span>
-                <span className="contract-address">{CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}</span>
-              </div>
-            )}
-          </div>
-
           {/* How to Play Card */}
           <div className="game-card how-to-play">
             <div className="card-header">
