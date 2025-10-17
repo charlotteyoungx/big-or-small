@@ -263,70 +263,224 @@ export function GameApp() {
     <div className="game-app">
       <Header />
       <main className="main-content">
-        <div>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-            <ConnectButton />
-            <div>Contract: {hasContract ? CONTRACT_ADDRESS : 'Set VITE_BOS_ADDRESS'}</div>
+        <div className="game-container">
+          {/* Hero Section */}
+          <div className="hero-section">
+            <div className="hero-icon">🎲</div>
+            <h1 className="hero-title">Big or Small</h1>
+            <p className="hero-subtitle">Provably Fair Dice Game with FHE Encryption</p>
+            <div className="wallet-connect">
+              <ConnectButton />
+            </div>
+            {hasContract && (
+              <div className="contract-badge">
+                <span className="contract-label">Contract:</span>
+                <span className="contract-address">{CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}</span>
+              </div>
+            )}
           </div>
 
-          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontWeight: 600 }}>How to Play</div>
-            <ol style={{ margin: 0, paddingLeft: 20, color: '#374151', lineHeight: 1.5 }}>
-              <li>Connect your wallet on Sepolia and ensure the bank has ETH.</li>
-              <li>Press “Start Game” to encrypt a random dice and register the round.</li>
-              <li>Choose stake and bet on Small (1-3) or Big (4-6), then place the bet.</li>
-              <li>Hit “Reveal Round” to trigger the decryption oracle and settle rewards.</li>
+          {/* How to Play Card */}
+          <div className="game-card how-to-play">
+            <div className="card-header">
+              <div className="card-icon">📖</div>
+              <h2 className="card-title">How to Play</h2>
+            </div>
+            <ol className="instruction-list">
+              <li>Connect your wallet on Sepolia and ensure the bank has ETH</li>
+              <li>Press "Start Game" to encrypt a random dice and register the round</li>
+              <li>Choose stake and bet on Small (1-3) or Big (4-6), then place the bet</li>
+              <li>Hit "Reveal Round" to trigger the decryption oracle and settle rewards</li>
             </ol>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>Copy the round id if you want to check the result later.</div>
+            <div className="card-tip">💡 Copy the round ID to check results later</div>
           </div>
 
-          <div style={{ height: 12 }} />
-
-          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontWeight: 600 }}>Round Id</div>
-            <div style={{ wordBreak: 'break-all', color: '#374151', minHeight: 20 }}>
-              {currentRoundId || 'Generated automatically when you start a game'}
+          {/* Start Game Card */}
+          <div className="game-card start-game-card">
+            <div className="card-header">
+              <div className="card-icon">🎮</div>
+              <h2 className="card-title">Start New Game</h2>
             </div>
-            <button onClick={startGame} disabled={disableActions || !hasContract}>
-              {action === 'starting' ? 'Starting...' : 'Start Game'}
-            </button>
-            {zamaError ? <div style={{ marginTop: 8, color: '#b91c1c' }}>{zamaError}</div> : null}
-          </div>
-
-          <div style={{ height: 12 }} />
-
-          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <div style={{ marginBottom: 8 }}>
-              <label>Bet (ETH {minBet ? formatEther(minBet) : '0.001'} - {maxBet ? formatEther(maxBet) : '0.01'}): </label>
-              <input value={betEth} onChange={(event) => setBetEth(event.target.value)} />
+            <div className="card-content">
+              <div className="round-id-section">
+                <label className="input-label">Round ID</label>
+                <div className="round-id-display">
+                  {currentRoundId ? (
+                    <code className="round-id-code">{currentRoundId}</code>
+                  ) : (
+                    <span className="round-id-placeholder">Generated automatically when you start</span>
+                  )}
+                </div>
+              </div>
+              <button
+                className={`btn btn-primary ${action === 'starting' ? 'btn-loading' : ''}`}
+                onClick={startGame}
+                disabled={disableActions || !hasContract}
+              >
+                {action === 'starting' ? (
+                  <>
+                    <span className="spinner"></span>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <span>🎲</span>
+                    Start Game
+                  </>
+                )}
+              </button>
+              {zamaError && <div className="error-message">{zamaError}</div>}
             </div>
-            <div style={{ marginBottom: 8 }}>
-              <label>Choice: </label>
-              <select value={choice} onChange={(event) => setChoice(parseInt(event.target.value, 10) as 1 | 2)}>
-                <option value={1}>Small (1-3)</option>
-                <option value={2}>Big (4-6)</option>
-              </select>
+          </div>
+
+          {/* Place Bet Card */}
+          <div className="game-card bet-card">
+            <div className="card-header">
+              <div className="card-icon">💰</div>
+              <h2 className="card-title">Place Your Bet</h2>
             </div>
-            <button onClick={placeBet} disabled={disableActions || !hasContract}>
-              {action === 'betting' ? 'Betting...' : 'Place Bet'}
-            </button>
+            <div className="card-content">
+              <div className="input-group">
+                <label className="input-label">
+                  Bet Amount (ETH)
+                  <span className="input-hint">
+                    Min: {minBet ? formatEther(minBet) : '0.001'} - Max: {maxBet ? formatEther(maxBet) : '0.01'}
+                  </span>
+                </label>
+                <input
+                  className="input-field"
+                  type="text"
+                  value={betEth}
+                  onChange={(event) => setBetEth(event.target.value)}
+                  placeholder="0.001"
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Your Prediction</label>
+                <div className="choice-buttons">
+                  <button
+                    className={`choice-btn ${choice === 1 ? 'choice-btn-active' : ''}`}
+                    onClick={() => setChoice(1)}
+                    type="button"
+                  >
+                    <div className="choice-icon">🔽</div>
+                    <div className="choice-label">Small</div>
+                    <div className="choice-range">1-3</div>
+                  </button>
+                  <button
+                    className={`choice-btn ${choice === 2 ? 'choice-btn-active' : ''}`}
+                    onClick={() => setChoice(2)}
+                    type="button"
+                  >
+                    <div className="choice-icon">🔼</div>
+                    <div className="choice-label">Big</div>
+                    <div className="choice-range">4-6</div>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                className={`btn btn-success ${action === 'betting' ? 'btn-loading' : ''}`}
+                onClick={placeBet}
+                disabled={disableActions || !hasContract}
+              >
+                {action === 'betting' ? (
+                  <>
+                    <span className="spinner"></span>
+                    Placing Bet...
+                  </>
+                ) : (
+                  <>
+                    <span>💸</span>
+                    Place Bet
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div style={{ height: 12 }} />
-
-          <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div>Reveal:</div>
-            <button onClick={revealRound} disabled={disableActions || !hasContract}>
-              {action === 'revealing' ? 'Revealing...' : 'Reveal Round'}
-            </button>
+          {/* Reveal Card */}
+          <div className="game-card reveal-card">
+            <div className="card-header">
+              <div className="card-icon">🔓</div>
+              <h2 className="card-title">Reveal Result</h2>
+            </div>
+            <div className="card-content">
+              <p className="reveal-description">
+                Ready to see the outcome? Click below to decrypt and settle your bet.
+              </p>
+              <button
+                className={`btn btn-reveal ${action === 'revealing' ? 'btn-loading' : ''}`}
+                onClick={revealRound}
+                disabled={disableActions || !hasContract}
+              >
+                {action === 'revealing' ? (
+                  <>
+                    <span className="spinner"></span>
+                    Revealing...
+                  </>
+                ) : (
+                  <>
+                    <span>✨</span>
+                    Reveal Round
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div style={{ marginTop: 16, color: '#111827', background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <div style={{ marginBottom: 8, fontWeight: 600 }}>Round Summary</div>
-            <div>{roundSummary}</div>
+          {/* Round Summary Card */}
+          <div className="game-card summary-card">
+            <div className="card-header">
+              <div className="card-icon">📊</div>
+              <h2 className="card-title">Round Summary</h2>
+            </div>
+            <div className="card-content">
+              {roundInfo ? (
+                <div className="summary-grid">
+                  <div className="summary-item">
+                    <div className="summary-label">Player</div>
+                    <div className="summary-value summary-address">
+                      {roundInfo.player.slice(0, 6)}...{roundInfo.player.slice(-4)}
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <div className="summary-label">Stake</div>
+                    <div className="summary-value">{formatEther(roundInfo.stake)} ETH</div>
+                  </div>
+                  <div className="summary-item">
+                    <div className="summary-label">Choice</div>
+                    <div className="summary-value">
+                      {roundInfo.choice === 1 ? '🔽 Small (1-3)' : roundInfo.choice === 2 ? '🔼 Big (4-6)' : 'None'}
+                    </div>
+                  </div>
+                  <div className="summary-item">
+                    <div className="summary-label">Status</div>
+                    <div className={`summary-badge ${roundInfo.settled ? 'badge-settled' : 'badge-pending'}`}>
+                      {roundInfo.settled ? 'Settled' : 'Pending'}
+                    </div>
+                  </div>
+                  {roundInfo.settled && (
+                    <div className="summary-item summary-result">
+                      <div className="summary-label">Result</div>
+                      <div className="summary-value result-dice">🎲 {roundInfo.result}</div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="summary-empty">No round data available</div>
+              )}
+            </div>
           </div>
 
-          <div style={{ marginTop: 16, color: '#1f2937' }}>{statusMessage}</div>
+          {/* Status Message */}
+          {statusMessage && (
+            <div className="status-message">
+              <span className="status-icon">ℹ️</span>
+              {statusMessage}
+            </div>
+          )}
         </div>
       </main>
     </div>
