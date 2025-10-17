@@ -266,14 +266,10 @@ export function GameApp() {
         <div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
             <ConnectButton />
-            <div>Contract: {hasContract ? CONTRACT_ADDRESS : 'Set VITE_BOS_ADDRESS'}</div>
-          </div>
+            </div>
 
           <div style={{ background: 'white', padding: 16, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontWeight: 600 }}>Round Id:</div>
-            <div style={{ wordBreak: 'break-all', color: '#374151' }}>
-              {currentRoundId || 'Generated when you start a game'}
-            </div>
+           
             <button onClick={startGame} disabled={disableActions || !hasContract}>
               {action === 'starting' ? 'Starting...' : 'Start Game'}
             </button>
