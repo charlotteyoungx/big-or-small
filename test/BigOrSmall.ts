@@ -30,6 +30,8 @@ describe("BigOrSmall", function () {
     const tx = await c.connect(signer).reveal(roundId);
     await tx.wait();
 
+    await fhevm.awaitDecryptionOracle();
+
     const balanceAfter = await ethers.provider.getBalance(dep.address);
     const roundInfo = await c.getRoundInfo(roundId);
 
