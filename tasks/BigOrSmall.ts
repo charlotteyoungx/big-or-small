@@ -7,23 +7,16 @@ task("bos:address", "Prints the BigOrSmall address").setAction(async function (_
   console.log("BigOrSmall address is " + d.address);
 });
 
-task("bos:start", "Start a round with encrypted dice")
+task("bos:start", "Start a round with on-chain randomness")
   .addParam("roundid", "Round id (bytes32 hex)")
-  .addParam("dice", "Dice number 1..6")
   .setAction(async function (args: TaskArguments, hre) {
-    const { ethers, deployments, fhevm } = hre;
-    await fhevm.initializeCLIApi();
+    const { ethers, deployments } = hre;
     const dep = await deployments.get("BigOrSmall");
     const [signer] = await ethers.getSigners();
 
     const c = await ethers.getContractAt("BigOrSmall", dep.address);
 
-    const enc = await fhevm
-      .createEncryptedInput(dep.address, signer.address)
-      .add8(parseInt(args.dice))
-      .encrypt();
-
-    const tx = await c.connect(signer).startGame(args.roundid, enc.handles[0], enc.inputProof);
+    const tx = await c.connect(signer).startGame(args.roundid);
     console.log("tx:", tx.hash);
     await tx.wait();
   });
