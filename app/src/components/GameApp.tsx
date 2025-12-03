@@ -12,7 +12,7 @@ import { bigOrSmallAbi } from '../abi/bigOrSmall';
 import { useEthersSigner } from '../hooks/useEthersSigner';
 import '../styles/GameApp.css';
 
-const CONTRACT_ADDRESS: string = "0xd9AFC0F7bcC9fbBD3d228198Deda810c339CEcC5";
+const CONTRACT_ADDRESS: string = "0x6cE226BD0e9AD9cA31698178F52a7fa2fd461f68";
 
 type RoundSummary = {
   player: Hex;

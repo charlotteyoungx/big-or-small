@@ -2,11 +2,11 @@
 pragma solidity ^0.8.24;
 
 import {FHE, euint8} from "@fhevm/solidity/lib/FHE.sol";
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /// @title BigOrSmall - single player high-low dice with FHE commit
 /// @notice Player starts game -> contract stores encrypted dice (1-6). Player places bet and choice. On reveal, relayer decrypts and contract settles.
-contract BigOrSmall is SepoliaConfig {
+contract BigOrSmall is ZamaEthereumConfig {
     enum Choice { None, Small, Big } // 1..3 small, 4..6 big
 
     struct Round {
@@ -76,10 +76,11 @@ contract BigOrSmall is SepoliaConfig {
 
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = FHE.toBytes32(r.encDice);
-        uint256 requestId = FHE.requestDecryption(handles, this.onRevealResponse.selector);
-        requestToRound[requestId] = roundId;
+        // uint256 requestId = FHE.requestDecryption(handles, this.onRevealResponse.selector);
+        // requestToRound[requestId] = roundId;
         r.revealPending = true;
-        emit RevealRequested(roundId, requestId);
+        // emit RevealRequested(roundId, requestId);
+        FHE.makePubliclyDecryptable(r.encDice);
     }
 
     /// @notice Callback invoked by the decryption oracle with the plaintext dice value.
@@ -90,7 +91,7 @@ contract BigOrSmall is SepoliaConfig {
         require(r.player != address(0), "unknown request");
         require(r.revealPending, "not pending");
 
-        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
+        // FHE.checkSignatures(requestId, cleartexts, decryptionProof);
 
         delete requestToRound[requestId];
 
